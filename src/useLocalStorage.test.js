@@ -1,5 +1,5 @@
 import React from 'react';
-import useLocalStorage from './useLocalStorage';
+import useLocalStorage, { clearTriggers, triggers } from './useLocalStorage';
 import { act } from 'react-dom/test-utils';
 import { configure, mount, shallow } from 'enzyme';
 import Adapter from 'enzyme-adapter-react-16';
@@ -16,6 +16,7 @@ const Wrapper = (props) => {
 describe('useLocalStorage', () => {
   beforeEach(() => {
     window.localStorage.clear();
+    clearTriggers();
   });
 
   test('loads KEY from local storage into hook state', () => {
@@ -122,5 +123,17 @@ describe('useLocalStorage', () => {
 
     expect(value).toEqual(false);
     expect(otherValue).toEqual(expected);
+  });
+
+  test('when component unmounts, it clears ITS OWN setStore function from triggers', () => {
+    const expected = { foo: 'bar' };
+    const wrapper = mount(
+      <Wrapper hook={() => useLocalStorage(KEY, expected)} />
+    );
+    mount(
+      <Wrapper hook={() => useLocalStorage(KEY, expected)} />
+    );
+    wrapper.unmount();
+    expect(triggers[KEY].length).toEqual(1);
   });
 });

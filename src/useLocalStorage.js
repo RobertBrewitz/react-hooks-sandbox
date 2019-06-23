@@ -5,7 +5,10 @@ import {
   useMemo,
 } from 'react';
 
-const triggers = {};
+export let triggers = {};
+export const clearTriggers = () => {
+  triggers = {};
+};
 
 const useLocalStorage = (key, initialValue) => {
   const [store, putStore] = useState(() => {
@@ -23,10 +26,14 @@ const useLocalStorage = (key, initialValue) => {
 
     putStore(localStore);
 
-    return () => {}
+    return () => {
+      triggers[key] = triggers[key]
+        .filter(trigger => trigger !== putStore);
+    }
   }, []);
 
-  const handleData = useCallback((input) => {
+
+  const handleData = (input) => {
     triggers[key].map(trigger => {
       trigger(input)
     });
@@ -36,7 +43,7 @@ const useLocalStorage = (key, initialValue) => {
     } catch (e) {
       console.log(e);
     }
-  });
+  };
 
   return [store, handleData];
 }
