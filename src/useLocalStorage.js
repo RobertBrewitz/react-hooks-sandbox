@@ -1,35 +1,44 @@
-import { useMemo, useCallback, useState } from 'react';
+import {
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+} from 'react';
 
-let cachedValue;
-
-const echoValue = (input) => cachedValue = input;
+const triggers = {};
 
 const useLocalStorage = (key, initialValue) => {
-  const _setItem = window.localStorage.setItem;
+  const [store, putStore] = useState(() => {
+    return initialValue;
+  });
 
-  const storedValue = useMemo(() => {
+  useEffect(() => {
+    triggers[key] = triggers[key] || [];
+    triggers[key] = [...triggers[key], putStore];
+
+    const item = window.localStorage.getItem(key);
+    const localStore = item
+      ? JSON.parse(item)
+      : initialValue;
+
+    putStore(localStore);
+
+    return () => {}
+  }, []);
+
+  const handleData = useCallback((input) => {
+    triggers[key].map(trigger => {
+      trigger(input)
+    });
+
     try {
-      const item = window.localStorage.getItem(key);
-      cachedValue = item ? JSON.parse(item) : initialValue;
-      return cachedValue;
-    } catch (error) {
-      console.error(error);
-      cachedValue = initialValue;
+      window.localStorage.setItem(key, JSON.stringify(input));
+    } catch (e) {
+      console.log(e);
     }
-  }, [cachedValue]);
+  });
 
-  const setValue = value => {
-    try {
-      const valueToStore =
-        value instanceof Function ? value(storedValue) : value;
-      window.localStorage.setItem(key, JSON.stringify(valueToStore));
-      cachedValue = valueToStore;
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
-  return [storedValue, setValue];
+  return [store, handleData];
 }
 
 export default useLocalStorage;
